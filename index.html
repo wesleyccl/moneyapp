@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="理財">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f8b6d">
+<title>理財記帳</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f1f3f6;--sf:#fff;--ink:#14213d;--mut:#6b7689;--ac:#0f8b6d;--acs:#dff2ec;--bad:#d64550;--warn:#b57a00;--line:#e1e5ec;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1420;--sf:#172033;--ink:#e8edf6;--mut:#8c98ad;--ac:#3ed0a8;--acs:#16342f;--bad:#ff7a85;--warn:#f0b429;--line:#26324a}}
+:root[data-theme="dark"]{--bg:#0e1420;--sf:#172033;--ink:#e8edf6;--mut:#8c98ad;--ac:#3ed0a8;--acs:#16342f;--bad:#ff7a85;--warn:#f0b429;--line:#26324a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"PingFang HK","Noto Sans HK","Microsoft JhengHei",sans-serif}
+main{max-width:520px;margin:0 auto;padding:20px 18px 160px}
+h2{font-size:15px;margin:28px 0 8px;font-weight:700}
+.lb{margin:0;color:var(--mut);font-size:13px}
+.big{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1;margin:2px 0 10px}
+.bad{color:var(--bad)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac)}
+.bar i.over{background:var(--bad)}
+.sub{margin:8px 0 0;color:var(--mut);font-size:13px}
+ul{list-style:none;margin:0;padding:0;background:var(--sf);border-radius:14px}
+li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+li:last-child{border:0}
+li div{flex:1;min-width:0}
+li b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+li small{color:var(--mut)}
+.ic{font-size:22px;width:34px;text-align:center}
+.amt{font-weight:700;white-space:nowrap}
+.amt.in{color:var(--ac)}
+.tag{font-size:11px;background:var(--line);color:var(--mut);padding:1px 6px;border-radius:6px;margin-left:6px}
+.sim{display:flex;gap:8px;flex-wrap:wrap}
+button,select,input{font:inherit;color:inherit}
+.sim button,.chip{border:1px solid var(--line);background:var(--sf);border-radius:20px;padding:8px 14px;cursor:pointer}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.warn{color:var(--warn);font-weight:600}
+.blk{background:var(--sf);border-radius:14px;padding:14px}
+.row{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px}
+.hist{display:flex;align-items:flex-end;gap:8px;height:90px;margin-top:10px}
+.hist i{flex:1;background:var(--acs);border-radius:4px 4px 0 0}
+.hist i:last-child{background:var(--ac)}
+input,select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+.ar input{width:140px;text-align:right}
+#fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ac);color:#fff;border:0;border-radius:28px;padding:13px 20px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--sf);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;background:none;border:0;padding:6px 0;color:var(--mut);font-size:12px;cursor:pointer}
+nav button span{display:block;font-size:20px}
+nav button.on{color:var(--ac);font-weight:700}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none}
+#ov.on{display:block}
+#sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--sf);border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .22s;max-height:92%;overflow-y:auto}
+#sheet.on{transform:none}
+.auto{background:var(--acs);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 12px}
+.go{width:100%;border:0;background:var(--ac);color:#fff;font-weight:700;border-radius:12px;padding:13px;cursor:pointer;margin-top:6px}
+#toast{position:fixed;left:50%;top:calc(20px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+.note{color:var(--mut);font-size:13px;margin:8px 2px 0}
+.two{display:flex;gap:8px}
+.out #fab,.out nav{display:none}
+.bi{width:84px;text-align:right;padding:4px 8px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.wk{text-align:center;color:var(--mut);font-size:12px}
+.cd{min-height:54px;background:var(--sf);border-radius:8px;padding:4px 2px;font-size:13px;text-align:center;cursor:pointer}
+.cd small{display:block;font-size:10px;line-height:1.25}
+.cd .o{color:var(--bad)}
+.cd .g{color:var(--ac)}
+.cd.on{outline:2px solid var(--ac)}
+.cd.td{font-weight:700}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<button id="fab" onclick="openSheet({})">＋ 記一筆</button>
+<nav id="nav"></nav>
+<div id="ov" onclick="closeSheet()"></div>
+<div id="sheet"></div>
+<div id="toast"></div>
+<script>
+const CATS={food:['茶餐廳／食飯','🍜'],trans:['交通','🚇'],shop:['購物','🛍️'],fun:['娛樂','🎬'],cross:['北上消費','🚄'],other:['其他','📦'],card:['交卡數','💳'],topup:['八達通增值','🔁'],inc:['收入','💰']};
+const VIAS=['Apple Pay','信用卡','八達通','PayMe','支付寶HK','銀行轉帳','現金'];
+const RATE={HKD:1,CNY:1.09,JPY:0.052};
+const isX=c=>c==='card'||c==='topup';
+const $=s=>document.getElementById(s);
+const today=new Date();today.setHours(0,0,0,0);
+const f=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const ago=n=>{const d=new Date(today);d.setDate(d.getDate()-n);return f(d)};
+const fm=n=>(Math.round(n*10)/10).toLocaleString('en-US');
+const fi=n=>Math.round(n).toLocaleString('en-US');
+const hk=t=>t.amt*(RATE[t.cur]||1);
+function seed(){
+  const r=[[0,68,'HKD','out','food','Apple Pay','daily','美都餐室'],[1,12.5,'HKD','out','trans','八達通','daily','港鐵'],[1,250,'HKD','out','topup','八達通','daily','八達通增值'],[2,420,'HKD','out','shop','信用卡','daily','超市'],[3,185,'HKD','out','food','PayMe','daily','AA 食飯'],[4,800,'HKD','in','inc','PayMe','daily','朋友還錢'],[5,95,'CNY','out','cross','支付寶HK','daily','深圳 茶飲'],[6,6000,'HKD','out','card','銀行轉帳','daily','交卡數'],[8,160,'HKD','out','fun','信用卡','daily','電影'],[10,58,'HKD','out','food','Apple Pay','daily','早餐'],[11,24000,'JPY','out','shop','信用卡','trip1','藥妝'],[12,3800,'JPY','out','food','信用卡','trip1','大阪 章魚燒'],[12,1600,'JPY','out','trans','現金','trip1','地鐵']];
+  return{tx:r.map((x,i)=>({id:i+1,d:ago(x[0]),amt:x[1],cur:x[2],type:x[3],cat:x[4],via:x[5],book:x[6],note:x[7]})),trips:[{id:'trip1',name:'大阪 2026',cur:'JPY'}],cards:[{n:'滙豐 Visa',stmt:15,due:10},{n:'中銀 Mastercard',stmt:22,due:17}],assets:[['銀行戶口',85000],['現金',2300],['MPF',210000],['股票／基金',96000]],hist:[372000,376500,381200,380100,389400]};
+}
+const SB=supabase.createClient('https://wtlepwwjutdscjmbmjwk.supabase.co','sb_publishable_GIZXJ_OtCoT4rqUS3XlPdQ_ckJcZRNB');
+const BUD0={total:12000,food:3500,trans:900,shop:2000,fun:1500,cross:1200,other:1000};
+let D={tx:[],trips:[],cards:[],assets:[],hist:[],bud:{...BUD0}},UID;
+let BUD=D.bud;
+const save=async()=>{const r=await SB.from('settings').upsert({user_id:UID,data:{bud:BUD,hist:D.hist}});if(r.error)toast(r.error.message)};
+let tab='home',flt='all',S,tripId,per='month',lv='list',cm=new Date(today.getFullYear(),today.getMonth(),1),cd=f(today);
+const PN={day:'本日',month:'本月',year:'本年'};
+const PL={day:10,month:7,year:4};
+const inPer=t=>t.d.slice(0,PL[per])===f(today).slice(0,PL[per]);
+const pc=()=>`<div class="chips">${['day','month','year'].map(k=>`<button class="chip ${per===k?'on':''}" onclick="per='${k}';render()">${PN[k]}</button>`).join('')}</div>`;
+function summ(){const r={inc:0,out:0,o:{},i:{}};D.tx.filter(t=>t.book==='daily'&&!isX(t.cat)&&inPer(t)).forEach(t=>{const v=hk(t);if(t.type==='in'){r.inc+=v;r.i[t.cat]=(r.i[t.cat]||0)+v}else{r.out+=v;r.o[t.cat]=(r.o[t.cat]||0)+v}});return r}
+function lines(o,tot){const k=Object.keys(o).sort((a,b)=>o[b]-o[a]);return k.length?`<ul>${k.map(c=>{const m=CATS[c]||[c,'💠'];return`<li><span class="ic">${m[1]}</span><div><b>${m[0]}</b>${bar(o[c],tot)}</div><span class="amt">${fi(o[c])}<br><small>${Math.round(o[c]/tot*100)}%</small></span></li>`}).join('')}</ul>`:'<p class="note">呢段時間未有記錄。</p>'}
+function flow(){const r=summ();return`<h2>收支</h2>${pc()}<div class="row"><span>收入 <b class="amt in">HK$${fi(r.inc)}</b></span><span>支出 <b class="amt">HK$${fi(r.out)}</b></span></div><p class="sub" style="margin:0 0 10px">結餘 HK$${fi(r.inc-r.out)}</p><p class="lb">支出類別</p>${lines(r.o,r.out)}<p class="lb" style="margin-top:12px">收入類別</p>${lines(r.i,r.inc)}<p class="note">只計日常帳本，交卡數同八達通增值唔計。</p>`}
+function cal(L){const y=cm.getFullYear(),m=cm.getMonth(),fd=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),p=String(m+1).padStart(2,'0');
+  let c='';for(let i=0;i<fd;i++)c+='<div></div>';
+  for(let d=1;d<=n;d++){const ds=y+'-'+p+'-'+String(d).padStart(2,'0'),T=L.filter(t=>t.d===ds&&!isX(t.cat)),o=T.filter(t=>t.type==='out').reduce((a,t)=>a+hk(t),0),g=T.filter(t=>t.type==='in').reduce((a,t)=>a+hk(t),0);
+    c+=`<div class="cd ${cd===ds?'on':''} ${ds===f(today)?'td':''}" onclick="cd='${ds}';render()">${d}<small class="o">${o?'-'+fi(o):'&nbsp;'}</small><small class="g">${g?'+'+fi(g):'&nbsp;'}</small></div>`}
+  const D1=L.filter(t=>t.d===cd);
+  return`<div class="row" style="align-items:center"><button class="chip" onclick="cm=new Date(${y},${m-1},1);render()">‹</button><b>${y} 年 ${m+1} 月</b><button class="chip" onclick="cm=new Date(${y},${m+1},1);render()">›</button></div><div class="cal">${'日一二三四五六'.split('').map(x=>`<div class="wk">${x}</div>`).join('')}${c}</div><h2>${cd.slice(5)} 嘅記錄</h2>${D1.length?`<ul>${D1.map(row).join('')}</ul>`:'<p class="note">呢日未有記錄。</p>'}`}
+function report(){const r=summ(),sv=r.inc?Math.round((r.inc-r.out)/r.inc*100)+'%':'-';
+  const ex=D.tx.filter(t=>t.book==='daily'&&!isX(t.cat)&&t.type==='out'&&inPer(t)),via={};ex.forEach(t=>via[t.via]=(via[t.via]||0)+hk(t));
+  const y=today.getFullYear(),mo=f(today).slice(0,7),keys=per==='year'?[...Array(12).keys()].map(i=>y+'-'+String(i+1).padStart(2,'0')):[...Array(new Date(y,today.getMonth()+1,0).getDate()).keys()].map(i=>mo+'-'+String(i+1).padStart(2,'0'));
+  const sum=keys.map(k=>D.tx.filter(t=>t.book==='daily'&&!isX(t.cat)&&t.type==='out'&&t.d.startsWith(k)).reduce((a,t)=>a+hk(t),0)),mx=Math.max(...sum,1);
+  return`<h2 style="margin-top:0">報表</h2>${pc()}<div class="blk"><div class="row"><span>收入</span><b>HK$${fi(r.inc)}</b></div><div class="row"><span>支出</span><b>HK$${fi(r.out)}</b></div><div class="row"><span>結餘</span><b>HK$${fi(r.inc-r.out)}</b></div><div class="row"><span>儲蓄率</span><b>${sv}</b></div></div>
+  <h2>支出類別</h2>${lines(r.o,r.out)}
+  <h2>${per==='year'?'每月':'每日'}支出走勢</h2><div class="blk"><div class="hist" style="gap:3px">${sum.map(v=>`<i style="height:${Math.max(2,v/mx*100)}%;background:var(--ac)"></i>`).join('')}</div><p class="sub">${per==='year'?y+' 年 1 至 12 月':'本月 1 號至月底'}，單期最高 HK$${fi(Math.max(...sum))}</p></div>
+  <h2>付款工具</h2>${lines(via,r.out)}<p class="note">只計日常帳本，旅遊帳本同轉帳唔計。</p>`}
+
+function openTrip(id){tripId=id;tab='trip';render();scrollTo(0,0)}
+const bi=k=>`<input class="bi" type="number" inputmode="decimal" value="${BUD[k]}" onchange="BUD['${k}']=+this.value||0;save();render()">`;
+const inP=t=>t.d.slice(0,7)===f(today).slice(0,7);
+const spent=c=>D.tx.filter(t=>t.type==='out'&&t.book==='daily'&&!isX(t.cat)&&inP(t)&&(!c||t.cat===c)).reduce((a,t)=>a+hk(t),0);
+const nextD=day=>{let d=new Date(today.getFullYear(),today.getMonth(),day);if(d<today)d=new Date(today.getFullYear(),today.getMonth()+1,day);return Math.round((d-today)/864e5)};
+const money=t=>(t.type==='in'?'+':'-')+(t.cur==='HKD'?'HK$':t.cur+' ')+fm(t.amt);
+function row(t){return`<li><span class="ic">${CATS[t.cat][1]}</span><div><b>${t.note||CATS[t.cat][0]}${isX(t.cat)?'<span class="tag">轉帳</span>':''}</b><small>${t.d.slice(5)}　${t.via}</small></div><span class="amt ${t.type==='in'?'in':''}">${money(t)}</span><span class="lb" onclick="event.stopPropagation();delTx(${t.id})" style="padding:4px 6px;cursor:pointer">✕</span></li>`}
+const sorted=()=>[...D.tx].sort((a,b)=>b.d.localeCompare(a.d)||b.id-a.id);
+function bar(v,m){const p=m?v/m*100:0;return`<div class="bar"><i class="${p>100?'over':''}" style="width:${Math.min(100,p)}%"></i></div>`}
+function dueList(){return D.cards.map(c=>({n:c.n,d:nextD(c.due)})).sort((a,b)=>a.d-b.d)}
+const V={
+home(){
+  const sp=spent(),rem=BUD.total-sp,left=new Date(today.getFullYear(),today.getMonth()+1,0).getDate()-today.getDate()+1;
+  const due=dueList().filter(x=>x.d<=7).map(x=>`<p class="warn">💳 ${x.n} 還款日 ${x.d===0?'就係今日':x.d+' 日後'}</p>`).join('');
+  return`<p class="lb">本月預算剩餘</p><div class="big ${rem<0?'bad':''}">HK$${fi(rem)}</div>${bar(sp,BUD.total)}<p class="sub">已用 HK$${fi(sp)} / ${fi(BUD.total)}，月底前平均每日可用 HK$${fi(Math.max(0,rem/left))}</p>${due}
+  ${flow()}<h2>試玩自動提示</h2><div class="sim"><button onclick="sim('ap')">Apple Pay 付款後</button><button onclick="sim('oc')">打開八達通</button><button onclick="sim('pm')">打開 PayMe</button></div>
+  <p class="note">iPhone 上會由「捷徑」觸發同一個提示。呢度係示範個流程。</p>
+  <h2>最近記錄</h2><ul>${sorted().slice(0,5).map(row).join('')}</ul>`},
+list(){
+  const L=sorted().filter(t=>flt==='all'||t.book===flt);
+  return`<h2 style="margin-top:0">記錄</h2><div class="chips"><button class="chip ${lv==='list'?'on':''}" onclick="lv='list';render()">列表</button><button class="chip ${lv==='cal'?'on':''}" onclick="lv='cal';render()">日曆</button></div><select onchange="flt=this.value;render()"><option value="all">全部帳本</option><option value="daily" ${flt==='daily'?'selected':''}>日常</option>${D.trips.map(t=>`<option value="${t.id}" ${flt===t.id?'selected':''}>${t.name}</option>`).join('')}</select><div style="height:12px"></div>${lv==='cal'?cal(L):`<ul>${L.map(row).join('')}</ul>`}`},
+budget(){
+  const ks=Object.keys(BUD).filter(k=>k!=='total');
+  return`<h2 style="margin-top:0">預算</h2><div class="blk"><div class="row"><b>總預算</b><span>已用 HK$${fi(spent())}　預算 ${bi('total')}</span></div>${bar(spent(),BUD.total)}</div><h2>各類別</h2><div class="blk">${ks.map(k=>`<div class="row" style="margin-top:12px"><span>${CATS[k][1]} ${CATS[k][0]}</span><span>${fi(spent(k))} / ${bi(k)}</span></div>${bar(spent(k),BUD[k])}`).join('')}</div><p class="note">交卡數同八達通增值係轉帳，唔計入支出。旅遊帳本亦唔計入日常預算。直接改數字就可以調整預算。</p>`},
+assets(){
+  const tot=D.assets.reduce((a,x)=>a+x[1],0),h=D.hist.filter(x=>x.m!==f(today).slice(0,7)).slice(-5).map(x=>x.t).concat(tot),mx=Math.max(...h,1);
+  return`<h2 style="margin-top:0">資產</h2><p class="lb">總資產（手動更新）</p><div class="big">HK$${fi(tot)}</div><div class="hist">${h.map(v=>`<i style="height:${v/mx*100}%"></i>`).join('')}</div><p class="sub">近 6 個月</p><h2>項目</h2><ul>${D.assets.map((a,i)=>`<li class="ar"><div>${a[0]}</div><input type="number" inputmode="decimal" value="${a[1]}" onchange="setAsset(${i},this.value)"></li>`).join('')}</ul><div class="two" style="margin-top:10px"><input id="an" placeholder="新增資產項目，例如：定期存款"><button class="chip" onclick="addAsset()">新增</button></div>`},
+report,
+trip(){const t=D.trips.find(x=>x.id===tripId),L=sorted().filter(x=>x.book===t.id),s=L.filter(x=>x.type==='out').reduce((a,x)=>a+x.amt,0);
+  return`<button class="chip" onclick="tab='more';render()">‹ 返回</button><h2>${t.name}</h2><p class="lb">總支出（${t.cur}）</p><div class="big">${t.cur} ${fi(s)}</div><p class="sub">約 HK$${fi(s*RATE[t.cur])}，唔計入日常預算</p><button class="go" onclick="openSheet({book:'${t.id}',cur:'${t.cur}',via:'信用卡'})">＋ 喺呢個帳本記一筆</button><h2>記錄</h2>${L.length?`<ul>${L.map(row).join('')}</ul>`:'<p class="note">仲未有記錄，㩒上面按鈕開始記。</p>'}`},
+more(){
+  return`<h2 style="margin-top:0">信用卡</h2><ul>${D.cards.map(c=>{const d=nextD(c.due);return`<li><span class="ic">💳</span><div><b>${c.n}</b><small>截數日 ${c.stmt} 號，還款日 ${c.due} 號</small></div><span class="amt ${d<=5?'bad':''}">${d} 日</span><span class="lb" onclick="delCard(${c.id})" style="padding:4px 8px;cursor:pointer">✕</span></li>`}).join('')}</ul>
+  <div class="two" style="margin-top:10px"><input id="cn" placeholder="卡名"><input id="cs" type="number" placeholder="截數日" style="width:90px"><input id="cu" type="number" placeholder="還款日" style="width:90px"></div><button class="go" onclick="addCard()">新增信用卡</button><h2>旅遊帳本</h2><ul>${D.trips.map(t=>{const s=D.tx.filter(x=>x.book===t.id&&x.type==='out').reduce((a,x)=>a+x.amt,0);return`<li style="cursor:pointer" onclick="openTrip('${t.id}')"><span class="ic">✈️</span><div><b>${t.name}</b><small>以 ${t.cur} 記錄</small></div><span class="amt">${t.cur} ${fi(s)}<br><small>約 HK$${fi(s*RATE[t.cur])}</small></span><span class="lb">›</span></li>`}).join('')}</ul>
+  <div class="two" style="margin-top:10px"><input id="tn" placeholder="新帳本名稱，例如：東京 2027"><select id="tc" style="width:90px"><option>JPY</option><option>CNY</option><option>HKD</option></select></div><button class="go" onclick="addTrip()">新增旅遊帳本</button>
+  <h2>帳戶</h2><button class="go" style="background:var(--sf);color:var(--ink);border:1px solid var(--line)" onclick="exportCsv()">匯出記錄（CSV 備份）</button><button class="go" style="background:var(--sf);color:var(--ink);border:1px solid var(--line)" onclick="SB.auth.signOut().then(()=>{D.tx=[];showLogin()})">登出</button><p class="note">匯率暫時係固定數值，之後會加入自動更新。</p>`}
+};
+function render(){$('app').innerHTML=V[tab]();$('nav').innerHTML=[['home','🏠','總覽'],['list','📒','記錄'],['report','📊','報表'],['budget','🎯','預算'],['assets','🏦','資產'],['more','💳','卡與旅遊']].map(x=>`<button class="${tab===x[0]||(tab==='trip'&&x[0]==='more')?'on':''}" onclick="tab='${x[0]}';render();scrollTo(0,0)"><span>${x[1]}</span>${x[2]}</button>`).join('')}
+async function addTrip(){const n=$('tn').value.trim();if(!n){toast('請輸入帳本名稱');return}const r=await SB.from('trips').insert({user_id:UID,name:n,cur:$('tc').value}).select().single();if(r.error){toast(r.error.message);return}D.trips.push(r.data);render();toast('已新增帳本')}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)}
+function sim(k){openSheet({ap:{via:'Apple Pay',amt:68,cat:'food',note:'美都餐室',auto:'🔔 偵測到 Apple Pay 付款 HK$68（美都餐室）。呢筆係咩用途？'},oc:{via:'八達通',cat:'topup',auto:'🔔 你打開咗八達通。有冇增值或付款？幾多錢？'},pm:{via:'PayMe',cat:'food',auto:'🔔 你打開咗 PayMe。俾咗錢定收咗錢？幾多錢？'}}[k])}
+function openSheet(p){S=Object.assign({type:'out',amt:'',cur:'HKD',via:'現金',cat:'food',book:'daily',note:'',auto:''},p);drawSheet();$('ov').classList.add('on');$('sheet').classList.add('on')}
+function closeSheet(){$('ov').classList.remove('on');$('sheet').classList.remove('on')}
+function drawSheet(){
+  const cs=S.type==='out'?['food','trans','shop','fun','cross','other','card','topup']:['inc','other'];
+  $('sheet').innerHTML=`${S.auto?`<div class="auto">${S.auto}</div>`:''}
+  <div class="chips"><button class="chip ${S.type==='out'?'on':''}" onclick="S.type='out';S.cat='food';drawSheet()">支出</button><button class="chip ${S.type==='in'?'on':''}" onclick="S.type='in';S.cat='inc';drawSheet()">收入</button></div>
+  <div class="two"><input type="number" inputmode="decimal" placeholder="金額" value="${S.amt}" oninput="S.amt=this.value" ${S.amt?'':'autofocus'}><select style="width:90px" onchange="S.cur=this.value">${Object.keys(RATE).map(c=>`<option ${S.cur===c?'selected':''}>${c}</option>`).join('')}</select></div>
+  <p class="lb" style="margin-top:12px">用咩付款</p><div class="chips">${VIAS.map(v=>`<button class="chip ${S.via===v?'on':''}" onclick="S.via='${v}';drawSheet()">${v}</button>`).join('')}</div>
+  <p class="lb">類別</p><div class="chips">${cs.map(c=>`<button class="chip ${S.cat===c?'on':''}" onclick="S.cat='${c}';drawSheet()">${CATS[c][1]} ${CATS[c][0]}</button>`).join('')}</div>
+  <select onchange="S.book=this.value"><option value="daily">日常帳本</option>${D.trips.map(t=>`<option value="${t.id}" ${S.book===t.id?'selected':''}>${t.name}</option>`).join('')}</select>
+  <div style="height:8px"></div><input placeholder="備註（可留空）" value="${S.note}" oninput="S.note=this.value"><button class="go" onclick="saveTx()">儲存記錄</button>`}
+async function saveTx(){const a=parseFloat(S.amt);if(!(a>0)){toast('請輸入金額');return}
+  const r=await SB.from('transactions').insert({user_id:UID,d:f(new Date()),amt:a,cur:S.cur,type:S.type,cat:S.cat,via:S.via,book:S.book,note:S.note||null}).select().single();if(r.error){toast('儲存失敗：'+r.error.message);return}D.tx.push({...r.data,amt:+r.data.amt});closeSheet();render();toast('已儲存記錄')}
+
+async function load(){
+  try{
+    UID=(await SB.auth.getUser()).data.user.id;
+    const q=await Promise.all(['transactions','trips','cards','assets','settings'].map(t=>SB.from(t).select('*')));
+    const bad=q.find(x=>x.error);if(bad)throw bad.error;
+    const [a,b,c,d,e]=q;
+    D.tx=a.data.map(r=>({...r,amt:+r.amt}));D.trips=b.data;
+    D.cards=c.data.map(r=>({id:r.id,n:r.name,stmt:r.stmt_day,due:r.due_day}));
+    D.assets=d.data.map(r=>[r.name,+r.value,r.id]);
+    const s=e.data[0]?e.data[0].data:null;
+    if(!s){
+      await SB.from('settings').insert({user_id:UID,data:{bud:BUD0,hist:[]}});
+      const r=await SB.from('assets').insert(['銀行戶口','現金','MPF','股票／基金'].map(n=>({user_id:UID,name:n,value:0}))).select();
+      D.assets=r.data.map(x=>[x.name,+x.value,x.id]);D.bud={...BUD0};D.hist=[];
+    }else{D.bud=s.bud||{...BUD0};D.hist=s.hist||[]}
+    BUD=D.bud;
+    document.body.classList.remove('out');render();
+  }catch(err){showLogin('載入失敗：'+(err.message||err))}
+}
+function showLogin(m){document.body.classList.add('out');$('app').innerHTML=`<h2 style="margin-top:40px;font-size:22px">理財記帳</h2><p class="note">登入你自己嘅帳戶，資料只有你睇到。</p><div style="height:12px"></div><input id="em" type="email" placeholder="電郵" autocomplete="username"><div style="height:8px"></div><input id="pw" type="password" placeholder="密碼（最少 6 個字元）" autocomplete="current-password"><button class="go" onclick="auth('in')">登入</button><button class="go" style="background:var(--sf);color:var(--ink);border:1px solid var(--line)" onclick="auth('up')">註冊新帳戶</button><p class="note">${m||''}</p>`}
+async function auth(k){
+  const e=$('em').value.trim(),p=$('pw').value;if(!e||!p){showLogin('請輸入電郵同密碼');return}
+  const r=k==='in'?await SB.auth.signInWithPassword({email:e,password:p}):await SB.auth.signUp({email:e,password:p});
+  if(r.error){showLogin(r.error.message);return}
+  if(!r.data.session){showLogin('已發送確認電郵，請㩒電郵入面嘅連結確認，再返嚟登入。');return}
+  await load();
+}
+async function setAsset(i,v){const a=D.assets[i];a[1]=+v||0;const r=await SB.from('assets').update({value:a[1]}).eq('id',a[2]);if(r.error)toast(r.error.message);const m=f(today).slice(0,7),t=D.assets.reduce((s,x)=>s+x[1],0),h=D.hist.find(x=>x.m===m);h?h.t=t:D.hist.push({m,t});save();render()}
+async function addAsset(){const n=$('an').value.trim();if(!n)return;const r=await SB.from('assets').insert({user_id:UID,name:n,value:0}).select().single();if(r.error){toast(r.error.message);return}D.assets.push([r.data.name,0,r.data.id]);render()}
+async function addCard(){const n=$('cn').value.trim(),s=+$('cs').value,u=+$('cu').value;if(!n||s<1||s>31||u<1||u>31){toast('請輸入卡名同 1 至 31 嘅日子');return}const r=await SB.from('cards').insert({user_id:UID,name:n,stmt_day:s,due_day:u}).select().single();if(r.error){toast(r.error.message);return}D.cards.push({id:r.data.id,n,stmt:s,due:u});render()}
+async function delCard(id){if(!confirm('刪除呢張信用卡？'))return;const r=await SB.from('cards').delete().eq('id',id);if(r.error){toast(r.error.message);return}D.cards=D.cards.filter(c=>c.id!==id);render()}
+async function delTx(id){if(!confirm('刪除呢筆記錄？'))return;const r=await SB.from('transactions').delete().eq('id',id);if(r.error){toast(r.error.message);return}D.tx=D.tx.filter(t=>t.id!==id);render()}
+function exportCsv(){const r=D.tx.map(t=>[t.d,t.type,t.amt,t.cur,CATS[t.cat]?CATS[t.cat][0]:t.cat,t.via,t.book,(t.note||'').replace(/[",\n]/g,' ')].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffdate,type,amount,currency,category,via,ledger,note\n'+r],{type:'text/csv'}));a.download='expenses.csv';a.click()}
+async function boot(){const r=await SB.auth.getSession();if(r.data.session)await load();else showLogin()}
+boot();
+</script>
+</body>
+</html>
